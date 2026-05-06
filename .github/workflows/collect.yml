@@ -1,26 +1,45 @@
-name: V2Ray جمع‌آوری خودکار کانفیگ‌های 
+name: جمع‌آوری کانفیگ‌های تست شده از منابع برتر
 
 on:
+  schedule:
+    - cron: '*/120 * * * *'  # هر ۲ ساعت یک بار
   workflow_dispatch:
 
 jobs:
-  collect:
+  merge:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: دانلود کانفیگ‌ها
+      - name: دانلود کانفیگ‌های تست شده
         run: |
-          curl -L -o config_lite.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/mix
-          curl -L -o vless.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/vless
+          # منبع 1: کانفیگ تست شده دلتا (بالاترین کیفیت و تضمین شده)
+          curl -L -o source_delta.txt https://raw.githubusercontent.com/Delta-Kronecker/V2ray-Config/main/vless.txt
+          
+          # منبع 2: کانفیگ امن برای ایران و مودم همراه
+          curl -L -o source_rjsxrd.txt https://raw.githubusercontent.com/whoahaow/rjsxrd/main/default/1
+
+      - name: ادغام و پاکسازی
+        run: |
+          > merged.txt
+          echo "# =========================================" >> merged.txt
+          echo "# کانفیگ‌های تست شده از منابع معتبر" >> merged.txt
+          echo "# به‌روز شده در تاریخ: $(date)" >> merged.txt
+          echo "# =========================================" >> merged.txt
+          echo "" >> merged.txt
+          
+          # ادغام دو منبع و حذف کامل خطوط تکراری
+          cat source_delta.txt source_rjsxrd.txt | sort -u >> merged.txt
 
       - name: Commit و Push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add config_lite.txt vless.txt
-          git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی کانفیگ‌ها"
-          git push
+          git add merged.txt
+          git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]"
+          git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
