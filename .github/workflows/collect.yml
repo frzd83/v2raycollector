@@ -1,26 +1,62 @@
-name: جمع‌آوری خودکار کانفیگ‌های V2Ray
+name: V2Ray جمع‌آوری خودکار کانفیگ‌های     
 
 on:
   schedule:
-    - cron: '*/120 * * * *'  # هر ۲ ساعت یک بار اجرا شود
-  workflow_dispatch:         # امکان اجرای دستی هم وجود دارد
+    - cron: '*/120 * * * *'
+  workflow_dispatch:
 
 jobs:
   collect:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: دانلود کانفیگ‌ها از منابع معتبر
+      - name: دانلود کانفیگ‌ها
         run: |
           curl -L -o config_lite.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/mix
           curl -L -o vless.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/vless
+          echo "// به‌روز شده در تاریخ $(date)" >> config_lite.txt
 
-      - name: Commit و Push تغییرات
+      - name: Commit و Push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add config_lite.txt vless.txt
-          git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]" || echo "تغییری وجود ندارد"
+          git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]"
           git push
+
+name: V2Ray جمع‌آوری خودکار کانفیگ‌های 
+
+on:
+  schedule:
+    - cron: '*/120 * * * *'
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: دانلود کانفیگ‌ها
+        run: |
+          curl -L -o config_lite.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/mix
+          curl -L -o vless.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/vless
+
+      - name: Commit و Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add config_lite.txt vless.txt
+          git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]"
+          git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
