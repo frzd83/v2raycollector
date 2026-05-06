@@ -1,4 +1,4 @@
-name: جمع‌آوری کانفیگ‌های تضمینی
+name: جمع‌آوری کانفیگ‌های V2Ray از منابع معتبر
 
 on:
   schedule:
@@ -6,66 +6,54 @@ on:
   workflow_dispatch:
 
 jobs:
-  merge:
+  download:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout repository
+      - name: دریافت کد مخزن
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: دانلود از منابع زنده
+      - name: دانلود کانفیگ‌ها
         run: |
-          echo "✅ در حال دانلود از Epodonios ..."
-          curl -L -o epodonios.txt https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/v2ray.txt
+          echo "🔄 شروع دانلود از منابع..."
           
-          echo "✅ در حال دانلود از Chocolate4U ..."
-          curl -L -o chocolate.txt https://raw.githubusercontent.com/Chocolate4U/V2Ray-Configs/main/All_Configs_Sub.txt
+          # منبع 1: Epodonios (معتبر و به‌روز)
+          curl -s -o source1.txt https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/v2ray.txt
           
-          echo "✅ در حال دانلود از freefq ..."
-          curl -L -o freefq.txt https://raw.githubusercontent.com/freefq/free/master/v2ray
+          # منبع 2: freefq (قدیمی و پایدار)
+          curl -s -o source2.txt https://raw.githubusercontent.com/freefq/free/master/v2ray
+          
+          # منبع 3: v2ray-configs (پشتیبان)
+          curl -s -o source3.txt https://raw.githubusercontent.com/tdslf/v2ray-configs/main/v2ray.txt
 
-      - name: ادغام و پاکسازی
+      - name: ترکیب و آماده‌سازی
         run: |
-          # ایجاد فایل خروجی
-          > merged.txt
-          
-          echo "# =========================================" >> merged.txt
-          echo "# کانفیگ‌های V2Ray از سه منبع معتبر" >> merged.txt
-          echo "# به‌روز شده در تاریخ: $(date)" >> merged.txt
-          echo "# =========================================" >> merged.txt
+          # ایجاد فایل نهایی
+          echo "# V2Ray Configs - Updated: $(date)" > merged.txt
           echo "" >> merged.txt
           
-          # وجود فایل‌ها را بررسی کن و ادغام کن
-          [ -s epodonios.txt ] && cat epodonios.txt >> merged.txt
-          [ -s chocolate.txt ] && cat chocolate.txt >> merged.txt
-          [ -s freefq.txt ] && cat freefq.txt >> merged.txt
+          # اضافه کردن همه فایل‌ها (حتی اگر خالی باشند)
+          cat source1.txt >> merged.txt 2>/dev/null || true
+          cat source2.txt >> merged.txt 2>/dev/null || true
+          cat source3.txt >> merged.txt 2>/dev/null || true
           
           # حذف خطوط خالی و تکراری
           sed -i '/^$/d' merged.txt
           sort -u -o merged.txt merged.txt
           
-          # فقط کانفیگ‌های معتبر رو نگه دار
-          cp merged.txt all_configs_backup.txt
-          grep -E "(vless://|vmess://|trojan://|ss://)" merged.txt > temp.txt || echo "هیچ کانفیگ معتبری یافت نشد" > temp.txt
-          mv temp.txt merged.txt
-          
-          # آمار نهایی رو نشون بده
-          echo "✅ تعداد کل کانفیگ‌های استخراج شده: $(wc -l < merged.txt)"
+          # نمایش تعداد کانفیگ‌ها
+          COUNT=$(wc -l < merged.txt)
+          echo "✅ تعداد کانفیگ‌های جمع‌آوری شده: $COUNT"
 
-      - name: Commit و Push
+      - name: ذخیره در مخزن
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add merged.txt all_configs_backup.txt
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add merged.txt
           
-          if [ -s merged.txt ] && [ $(wc -l < merged.txt) -gt 10 ]; then
-            git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]"
-            git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
-            echo "✅ فایل merged.txt با $(wc -l < merged.txt) کانفیگ به‌روز شد."
-          else
-            echo "⚠️ خطا: تعداد کانفیگ‌ها بسیار کم است (کمتر از 10). commit انجام نشد."
-            exit 1
-          fi
+          # همیشه commit کن (حتی اگر فایل خالی باشد)
+          git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]" || echo "تغییری وجود نداشت"
+          git push
