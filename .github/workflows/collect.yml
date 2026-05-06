@@ -1,4 +1,4 @@
-name: جمع‌آوری کانفیگ‌های تست شده
+name: جمع‌آوری کانفیگ‌ها با مدیریت خطا
 
 on:
   schedule:
@@ -16,29 +16,59 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: دانلود کانفیگ‌های فعال
+      - name: دانلود کانفیگ‌ها (با ادامه در صورت خطا)
+        continue-on-error: true
         run: |
-          # منبع 1: مخزن قوی از کانفیگ‌های VLESS (جایگزین دلتا)
-          curl -L -o source1.txt https://raw.githubusercontent.com/soroushmirzaei/V2ray-configs/main/vless.txt
+          echo "⏳ مرحله 1: دانلود از منابع ..."
           
-          # منبع 2: ترکیبی از پروتکل‌های مختلف (جایگزین rjsxrd)
-          curl -L -o source2.txt https://raw.githubusercontent.com/freefq/free/master/v2ray
+          # منبع 1: کانفیگ‌های تست شده (در صورت وجود)
+          curl -L -o source1.txt https://raw.githubusercontent.com/Delta-Kronecker/V2ray-Config/main/vless.txt || echo "منبع 1 در دسترس نیست"
+          
+          # منبع 2: کانفیگ‌های امن (در صورت وجود)
+          curl -L -o source2.txt https://raw.githubusercontent.com/whoahaow/rjsxrd/main/default/1 || echo "منبع 2 در دسترس نیست"
+          
+          # منبع 3: کانفیگ‌های ساده و پایدار (جایگزین جدید)
+          curl -L -o source3.txt https://raw.githubusercontent.com/freefq/free/master/v2ray || echo "منبع 3 در دسترس نیست"
+          
+          echo "✅ مرحله دانلود تمام شد."
 
-      - name: ادغام و پاکسازی
+      - name: ادغام فایل‌های موجود
         run: |
-          > merged.txt
-          echo "# =========================================" >> merged.txt
-          echo "# کانفیگ‌های تست شده از منابع جایگزین" >> merged.txt
-          echo "# به‌روز شده در تاریخ: $(date)" >> merged.txt
+          echo "# =========================================" > merged.txt
+          echo "# کانفیگ‌های V2Ray - به‌روز شده: $(date)" >> merged.txt
           echo "# =========================================" >> merged.txt
           echo "" >> merged.txt
           
-          cat source1.txt source2.txt | sort -u | grep -E "(vless://|vmess://|trojan://)" >> merged.txt
+          # فقط فایل‌هایی که وجود دارند را با هم ترکیب کن
+          for file in source1.txt source2.txt source3.txt; do
+            if [ -s "$file" ]; then
+              echo "✅ اضافه کردن $file ..."
+              cat "$file" >> merged.txt
+            else
+              echo "⚠️ فایل $file خالی یا موجود نیست، رد می‌شود."
+            fi
+          done
+          
+          # حذف خطوط تکراری و خالی
+          sed -i '/^$/d' merged.txt
+          sort -u -o merged.txt merged.txt
+          
+          # استخراج فقط کانفیگ‌های معتبر
+          grep -E "(vless://|vmess://|trojan://)" merged.txt > temp.txt || true
+          mv temp.txt merged.txt 2>/dev/null || true
 
-      - name: Commit و Push
+      - name: Commit و Push (در صورت وجود تغییر)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add merged.txt
-          git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار [skip ci]"
-          git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
+          
+          # فقط اگر فایل خالی نبود، commit کن
+          if [ -s merged.txt ]; then
+            git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]"
+            git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
+            echo "✅ تغییرات با موفقیت اعمال شد."
+          else
+            echo "⚠️ فایل merged.txt خالی است، commit انجام نشد."
+            exit 0
+          fi
