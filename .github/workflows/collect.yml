@@ -1,0 +1,26 @@
+name: جمع‌آوری خودکار کانفیگ‌های V2Ray
+
+on:
+  schedule:
+    - cron: '*/120 * * * *'  # هر ۲ ساعت یک بار اجرا شود
+  workflow_dispatch:         # امکان اجرای دستی هم وجود دارد
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: دانلود کانفیگ‌ها از منابع معتبر
+        run: |
+          curl -L -o config_lite.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/mix
+          curl -L -o vless.txt https://raw.githubusercontent.com/SoroushImanian/BlackKnight/main/sub/vless
+
+      - name: Commit و Push تغییرات
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add config_lite.txt vless.txt
+          git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]" || echo "تغییری وجود ندارد"
+          git push
