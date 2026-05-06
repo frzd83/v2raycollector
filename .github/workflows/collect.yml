@@ -1,4 +1,4 @@
-name: جمع‌آوری کانفیگ‌های V2Ray از منابع معتبر
+name: جمع‌آوری کانفیگ‌های V2Ray (نسخه نهایی)
 
 on:
   schedule:
@@ -16,44 +16,38 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: دانلود کانفیگ‌ها
+      - name: دانلود کانفیگ‌ها از منابع جایگزین
         run: |
-          echo "🔄 شروع دانلود از منابع..."
+          echo "🔄 شروع دانلود از منابع جدید..."
           
-          # منبع 1: Epodonios (معتبر و به‌روز)
-          curl -s -o source1.txt https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/v2ray.txt
+          # منبع 1: v2ray-configs (منبع اصلی و فعال)
+          curl -L -o source1.txt https://raw.githubusercontent.com/v2fly/v2ray-configs/main/README.md || echo "منبع 1 در دسترس نیست"
           
-          # منبع 2: freefq (قدیمی و پایدار)
-          curl -s -o source2.txt https://raw.githubusercontent.com/freefq/free/master/v2ray
+          # منبع 2: کانفیگ‌های ساده و سبک
+          curl -L -o source2.txt https://raw.githubusercontent.com/Poiuytrewq111/Free-Configs/main/configs.txt || echo "منبع 2 در دسترس نیست"
           
-          # منبع 3: v2ray-configs (پشتیبان)
-          curl -s -o source3.txt https://raw.githubusercontent.com/tdslf/v2ray-configs/main/v2ray.txt
+          # منبع 3: پشتیبان نهایی
+          curl -L -o source3.txt https://raw.githubusercontent.com/mojtabaesl/V2Ray-Configs/main/README.md || echo "منبع 3 در دسترس نیست"
 
-      - name: ترکیب و آماده‌سازی
+      - name: ترکیب و ذخیره
         run: |
-          # ایجاد فایل نهایی
-          echo "# V2Ray Configs - Updated: $(date)" > merged.txt
+          # ایجاد فایل نهایی با هدر
+          echo "# V2Ray Configs - به‌روز شده در تاریخ: $(date)" > merged.txt
           echo "" >> merged.txt
           
-          # اضافه کردن همه فایل‌ها (حتی اگر خالی باشند)
-          cat source1.txt >> merged.txt 2>/dev/null || true
-          cat source2.txt >> merged.txt 2>/dev/null || true
-          cat source3.txt >> merged.txt 2>/dev/null || true
+          # ترکیب فایل‌های دانلود شده (حذف خطوط تکراری)
+          cat source1.txt source2.txt source3.txt 2>/dev/null | sort -u >> merged.txt
           
-          # حذف خطوط خالی و تکراری
+          # حذف خطوط خالی
           sed -i '/^$/d' merged.txt
-          sort -u -o merged.txt merged.txt
           
-          # نمایش تعداد کانفیگ‌ها
-          COUNT=$(wc -l < merged.txt)
-          echo "✅ تعداد کانفیگ‌های جمع‌آوری شده: $COUNT"
+          # آمار نهایی
+          echo "✅ تعداد کل خطوط: $(wc -l < merged.txt)"
 
       - name: ذخیره در مخزن
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
           git add merged.txt
-          
-          # همیشه commit کن (حتی اگر فایل خالی باشد)
-          git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]" || echo "تغییری وجود نداشت"
+          git commit -m "به‌روزرسانی خودکار [skip ci]" || echo "تغییری وجود نداشت"
           git push
