@@ -1,8 +1,8 @@
-name: جمع‌آوری کانفیگ‌های تست شده از منابع برتر
+name: جمع‌آوری کانفیگ‌های تست شده
 
 on:
   schedule:
-    - cron: '*/120 * * * *'  # هر ۲ ساعت یک بار
+    - cron: '*/120 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -16,30 +16,29 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: دانلود کانفیگ‌های تست شده
+      - name: دانلود کانفیگ‌های فعال
         run: |
-          # منبع 1: کانفیگ تست شده دلتا (بالاترین کیفیت و تضمین شده)
-          curl -L -o source_delta.txt https://raw.githubusercontent.com/Delta-Kronecker/V2ray-Config/main/vless.txt
+          # منبع 1: مخزن قوی از کانفیگ‌های VLESS (جایگزین دلتا)
+          curl -L -o source1.txt https://raw.githubusercontent.com/soroushmirzaei/V2ray-configs/main/vless.txt
           
-          # منبع 2: کانفیگ امن برای ایران و مودم همراه
-          curl -L -o source_rjsxrd.txt https://raw.githubusercontent.com/whoahaow/rjsxrd/main/default/1
+          # منبع 2: ترکیبی از پروتکل‌های مختلف (جایگزین rjsxrd)
+          curl -L -o source2.txt https://raw.githubusercontent.com/freefq/free/master/v2ray
 
       - name: ادغام و پاکسازی
         run: |
           > merged.txt
           echo "# =========================================" >> merged.txt
-          echo "# کانفیگ‌های تست شده از منابع معتبر" >> merged.txt
+          echo "# کانفیگ‌های تست شده از منابع جایگزین" >> merged.txt
           echo "# به‌روز شده در تاریخ: $(date)" >> merged.txt
           echo "# =========================================" >> merged.txt
           echo "" >> merged.txt
           
-          # ادغام دو منبع و حذف کامل خطوط تکراری
-          cat source_delta.txt source_rjsxrd.txt | sort -u >> merged.txt
+          cat source1.txt source2.txt | sort -u | grep -E "(vless://|vmess://|trojan://)" >> merged.txt
 
       - name: Commit و Push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add merged.txt
-          git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار کانفیگ‌ها [skip ci]"
+          git diff --quiet && git diff --staged --quiet || git commit -m "به‌روزرسانی خودکار [skip ci]"
           git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
