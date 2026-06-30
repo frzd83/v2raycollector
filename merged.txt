@@ -1,2 +1,2 @@
-# V2Ray Configs - به‌روز شده در تاریخ: Mon Jun 29 22:10:12 UTC 2026
+# V2Ray Configs - به‌روز شده در تاریخ: Tue Jun 30 00:07:05 UTC 2026
 404: Not Found404: Not Found404: Not Found
