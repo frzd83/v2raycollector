@@ -1,3 +1,2 @@
-# V2Ray Configs - به‌روز شده در تاریخ: Tue Aug 18 20:26:42 UTC 2026
-429: Too Many Requests
-For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https://docs.github.com/en/site-policy/github-terms/github-terms-of-service).404: Not Found404: Not Found
+# V2Ray Configs - به‌روز شده در تاریخ: Tue Aug 18 21:26:46 UTC 2026
+404: Not Found404: Not Found404: Not Found
